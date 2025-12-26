@@ -13,10 +13,12 @@ ZTGM2599_DATAELEMENT)
 - Use meaningful messages (success/error)
 - Use global data elements
 
-<h5> Program 1: Display flights to a specific location and time</h5>
+<h4> Program 1: Display flights to a specific location and time</h4>
 Name: ZTGM####_FLIGHTS e.g. DEVM2599 ZTGM2599_FLIGHTS
+
 Input
-#### Parameters:
+
+ Parameters:
 - SPFLI-CITYTO
 - SFLIGHT-FLDATE </br>
 
