@@ -4,7 +4,7 @@ velop ABAP programs. Please help her.
 - Program 2: Book a specific flight
 - Program 3: Cancel a booking
 
-######Remarks:
+<h6>Remarks:</h6>
 - All repository objects come in one package (Name for package ZTG_## e.g.Use-
 name DEVM2599 => ZTGM2599)
 - Every repository object starts with ZTG_## (e.g. Username DEVM2599 =>
@@ -13,7 +13,7 @@ ZTGM2599_DATAELEMENT)
 - Use meaningful messages (success/error)
 - Use global data elements
 
-###1 Program 1: Display flights to a specific location and time
+<h5> Program 1: Display flights to a specific location and time</h5>
 Name: ZTGM####_FLIGHTS e.g. DEVM2599 ZTGM2599_FLIGHTS
 Input
 #### Parameters:
