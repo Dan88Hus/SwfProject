@@ -1,0 +1,145 @@
+*&---------------------------------------------------------------------*
+*& Report ztgm2531_flights
+*&---------------------------------------------------------------------*
+*& THIS PROGRAM WILL DISPLAY ALL BOOKABLE FLIGHT that means
+*& Display flights to a specific location and time
+*& --------------------------------------------------------------------*
+*& SFLIGHT – flight instances (date, seats, price)
+*& SPFLI – flight routes (from/to cities & airports)
+*& SAPLANE – aircraft master data
+*& SBOOK – bookings (for luggage weight)
+*&
+*&
+*&
+*&---------------------------------------------------------------------*
+REPORT ztgm2531_flights.
+
+PARAMETERS: pa_city2 TYPE spfli-cityto,
+            pa_fdate TYPE sflight-fldate.
+
+
+*DATA: pa_city2 TYPE spfli-cityto VALUE 'FRANKFURT', " FRANKFURT
+*      pa_fdate TYPE sflight-fldate VALUE '20221221'. " 2022-12-21
+
+
+" Internal tables will be created for the Output ALV
+TYPES: BEGIN OF ty_flight,
+         carrid      TYPE sflight-carrid,
+         connid      TYPE sflight-connid,
+         fldate      TYPE sflight-fldate,
+         price       TYPE sflight-price,
+         countryfr   TYPE spfli-countryfr,
+         cityfrom    TYPE spfli-cityfrom,
+         airpfrom    TYPE spfli-airpfrom,
+         countryto   TYPE spfli-countryto,
+         cityto      TYPE spfli-cityto,
+         airpto      TYPE spfli-airpto,
+         free_b      TYPE ztgm2531_free_class_b,  " Free seats Business
+         free_f      TYPE ztgm2531_free_class_f,  " Free seats First
+         free_e      TYPE ztgm2531_free_class_e,  " Free seats Economy
+         free_weight TYPE ztgm2531_free_weight,    " Free weight
+       END OF ty_flight.
+
+DATA:
+  gt_flights  TYPE STANDARD TABLE OF ty_flight,
+  gs_flight   TYPE ty_flight,
+  gt_fieldcat TYPE slis_t_fieldcat_alv,
+  gs_fieldcat TYPE slis_fieldcat_alv,
+  gs_layout   TYPE slis_layout_alv.
+
+
+SELECT "Flight Instances and Routes Combination
+  sf~carrid, sf~connid, sf~fldate, sf~price, sf~seatsmax_b, sf~seatsocc_b, sf~seatsmax_f, sf~seatsocc_f, sf~seatsmax, sf~seatsocc, sf~planetype,
+  sp~countryfr, sp~cityfrom, sp~airpfrom, sp~countryto, sp~cityto, sp~airpto
+  FROM sflight AS sf INNER JOIN spfli AS sp
+  ON sf~carrid = sp~carrid AND sf~connid = sp~connid
+INTO TABLE @DATA(lt_raw)
+  WHERE sp~cityto = @pa_city2 AND sf~fldate = @pa_fdate.
+
+IF lt_raw IS INITIAL.
+  MESSAGE 'No flights found for given destination and date' TYPE 'E'.
+  EXIT.
+ENDIF.
+
+LOOP AT lt_raw INTO DATA(ls_raw).
+
+  CLEAR gs_flight.
+
+  gs_flight-carrid    = ls_raw-carrid.
+  gs_flight-connid    = ls_raw-connid.
+  gs_flight-fldate    = ls_raw-fldate.
+  gs_flight-price     = ls_raw-price.
+  gs_flight-countryfr = ls_raw-countryfr.
+  gs_flight-cityfrom  = ls_raw-cityfrom.
+  gs_flight-airpfrom  = ls_raw-airpfrom.
+  gs_flight-countryto = ls_raw-countryto.
+  gs_flight-cityto    = ls_raw-cityto.
+  gs_flight-airpto    = ls_raw-airpto.
+
+  " Free seats calculation, Free seats = Seats maximum – Seats occupied
+  " To-do:
+  " Calculate per Flight, store in custom Elements, Display ALV Columns
+  " Here Calculate Free seats first
+  gs_flight-free_b = ls_raw-seatsmax_b - ls_raw-seatsocc_b.
+  gs_flight-free_f = ls_raw-seatsmax_f - ls_raw-seatsocc_f.
+  gs_flight-free_e = ls_raw-seatsmax   - ls_raw-seatsocc.
+
+  " Free weight calculation, SAPLANE has key with PLANETYPE
+  " without SINGLE keyword abap needs table as it expects multiple rows
+  " SELECT SINGLE from plane Master Data - SUM of luggage.
+
+  SELECT SINGLE weight
+    INTO @DATA(lv_plane_weight)
+    FROM saplane
+    WHERE planetype = @ls_raw-planetype.
+
+  SELECT SUM( luggweight )
+    INTO @DATA(lv_luggage_weight)
+    FROM sbook
+    WHERE carrid = @ls_raw-carrid
+      AND connid = @ls_raw-connid
+      AND fldate = @ls_raw-fldate.
+
+" How much cargo/luggage capacity is still available
+  gs_flight-free_weight = lv_plane_weight - lv_luggage_weight.
+
+  APPEND gs_flight TO gt_flights.
+
+ENDLOOP.
+
+DEFINE add_field.
+  CLEAR gs_fieldcat.
+  gs_fieldcat-fieldname = &1.
+  gs_fieldcat-seltext_m = &2.
+  APPEND gs_fieldcat TO gt_fieldcat.
+END-OF-DEFINITION.
+
+add_field 'CARRID'      'Carrier'.
+add_field 'CONNID'      'Connection'.
+add_field 'FLDATE'      'Flight Date'.
+add_field 'PRICE'       'Price'.
+add_field 'COUNTRYFR'   'Country From'.
+add_field 'CITYFROM'    'City From'.
+add_field 'AIRPFROM'    'Airport From'.
+add_field 'COUNTRYTO'   'Country To'.
+add_field 'CITYTO'      'City To'.
+add_field 'AIRPTO'      'Airport To'.
+add_field 'FREE_B'      'Free Class B'.
+add_field 'FREE_F'      'Free Class F'.
+add_field 'FREE_E'      'Free Class E'.
+add_field 'FREE_WEIGHT' 'Free Weight'.
+
+CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+  EXPORTING
+    i_callback_program = sy-repid
+    is_layout          = gs_layout
+    it_fieldcat        = gt_fieldcat
+  TABLES
+    t_outtab           = gt_flights
+  EXCEPTIONS
+    program_error      = 1
+    OTHERS             = 2.
+
+IF sy-subrc <> 0.
+  MESSAGE 'ALV display error' TYPE 'E'.
+ENDIF.

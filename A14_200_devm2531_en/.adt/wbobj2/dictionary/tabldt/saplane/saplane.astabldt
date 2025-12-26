@@ -1,0 +1,33 @@
+@EndUserText.label : 'Flugzeug'
+@AbapCatalog.enhancementCategory : #EXTENSIBLE_CHARACTER_NUMERIC
+@AbapCatalog.tableCategory : #TRANSPARENT
+@AbapCatalog.deliveryClass : #A
+@AbapCatalog.dataMaintenance : #ALLOWED
+define table saplane {
+  @AbapCatalog.foreignKey.keyType : #KEY
+  @AbapCatalog.foreignKey.screenCheck : true
+  key mandt     : s_mandt not null
+    with foreign key [0..*,1] t000
+      where mandt = saplane.mandt;
+  key planetype : s_planetye not null;
+  seatsmax      : s_seatsmax not null;
+  consum        : s_consum not null;
+  con_unit      : s_conunit not null;
+  @Semantics.quantity.unitOfMeasure : 'saplane.cap_unit'
+  tankcap       : s_capacity not null;
+  cap_unit      : s_capunit not null;
+  @Semantics.quantity.unitOfMeasure : 'saplane.wei_unit'
+  weight        : s_plan_wei not null;
+  wei_unit      : s_wei_unit not null;
+  span          : s_span not null;
+  span_unit     : s_unit not null;
+  leng          : s_length not null;
+  leng_unit     : s_unit not null;
+  @Semantics.quantity.unitOfMeasure : 'saplane.speed_unit'
+  op_speed      : s_speed not null;
+  speed_unit    : s_unit not null;
+  producer      : s_prod not null;
+  seatsmax_b    : s_smax_b not null;
+  seatsmax_f    : s_smax_f not null;
+
+}
