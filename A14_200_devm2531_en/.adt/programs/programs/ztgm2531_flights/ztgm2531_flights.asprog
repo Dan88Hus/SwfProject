@@ -3,6 +3,9 @@
 *&---------------------------------------------------------------------*
 *& THIS PROGRAM WILL DISPLAY ALL BOOKABLE FLIGHT that means
 *& Display flights to a specific location and time
+*&---------------------------------------------------------------------*
+*& THIS PROGRAM WILL DISPLAY ALL BOOKABLE FLIGHT that means
+*& Display flights to a specific location and time
 *& --------------------------------------------------------------------*
 *& SFLIGHT – flight instances (date, seats, price)
 *& SPFLI – flight routes (from/to cities & airports)
@@ -12,7 +15,8 @@
 *&
 *&
 *&---------------------------------------------------------------------*
-REPORT ztgm2531_flights.
+REPORT ztgm2531_flights MESSAGE-ID ztgm2531_messageclas.
+
 
 PARAMETERS: pa_city2 TYPE spfli-cityto,
             pa_fdate TYPE sflight-fldate.
@@ -57,7 +61,7 @@ INTO TABLE @DATA(lt_raw)
   WHERE sp~cityto = @pa_city2 AND sf~fldate = @pa_fdate.
 
 IF lt_raw IS INITIAL.
-  MESSAGE 'No flights found for given destination and date' TYPE 'E'.
+  MESSAGE E001.
   EXIT.
 ENDIF.
 
@@ -141,5 +145,5 @@ CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
     OTHERS             = 2.
 
 IF sy-subrc <> 0.
-  MESSAGE 'ALV display error' TYPE 'E'.
+  MESSAGE E002.
 ENDIF.
