@@ -3,6 +3,13 @@
 *&---------------------------------------------------------------------*
 *&
 *&---------------------------------------------------------------------*
+* SFLIGHT = PLANE informations like seat number,
+* SCUSTOM = Customer informations like address, telephone,
+* SBOOK = Flight Informations like passport number, reserved, cancelled, invoice.
+*
+* Inserting new record to SBOOK.
+* UPDATING SFLIGHT for seats + 1.
+
 REPORT ztgm2531_book MESSAGE-ID ztgm2531_messageclas.
 
 PARAMETERS:
@@ -10,7 +17,7 @@ PARAMETERS:
   p_connid TYPE sbook-connid     OBLIGATORY,
   p_fldate TYPE sbook-fldate     OBLIGATORY,
   p_cstmid TYPE sbook-customid   OBLIGATORY,
-  p_class  TYPE sbook-class      DEFAULT 'Y',
+  p_class  TYPE sbook-class      OBLIGATORY,
   p_smoker TYPE sbook-smoker,
   p_lugwht TYPE sbook-luggweight.
 
@@ -21,123 +28,117 @@ DATA:
   ls_sbook   TYPE sbook,
   lv_bookid  TYPE sbook-bookid,
   lv_factor  TYPE i,
-  lv_amount  TYPE sbook-forcuram.
+  lv_amount  TYPE sbook-forcuram. " Foreign Currency amount
 
-  SELECT SINGLE *
-    INTO ls_sflight
-    FROM sflight
-    WHERE carrid = p_carrid
-      AND connid = p_connid
-      AND fldate = p_fldate.
+CONSTANTS: c_invoice   TYPE sbook-invoice VALUE abap_true,
+           c_wunit     TYPE sbook-wunit VALUE 'KG',
+           C_currency  TYPE sbook-forcurkey VALUE 'EUR',
+           c_agencynum TYPE sbook-agencynum VALUE '00000009',
+           c_counter   TYPE sbook-counter VALUE '00000001'.
 
-  IF sy-subrc <> 0.
-    WRITE: / 'Error: Flight does not exist.'.
-    EXIT.
-  ENDIF.
+SELECT SINGLE *
+  INTO ls_sflight
+  FROM sflight
+  WHERE carrid = p_carrid
+    AND connid = p_connid
+    AND fldate = p_fldate.
 
-*---------------------------------------------------------------------*
-* 2. Read SCUSTOM
-*---------------------------------------------------------------------*
-  SELECT SINGLE *
-    INTO ls_scust
-    FROM scustom
-    WHERE id = p_cstmid.
+IF sy-subrc <> 0.
+  MESSAGE e001.
+  EXIT.
+ENDIF.
 
-  IF sy-subrc <> 0.
-    WRITE: / 'Error: Customer does not exist.'.
-    EXIT.
-  ENDIF.
+SELECT SINGLE *
+  INTO ls_scust
+  FROM scustom
+  WHERE id = p_cstmid.
 
-*---------------------------------------------------------------------*
-* 3. Determine price factor
-*---------------------------------------------------------------------*
-  CASE p_class.
-    WHEN 'C'.
-      lv_factor = 2.
-    WHEN 'F'.
-      lv_factor = 3.
-    WHEN OTHERS. "Y
-      lv_factor = 1.
-  ENDCASE.
+IF sy-subrc <> 0.
+  MESSAGE e003.
+  EXIT.
+ENDIF.
 
-  lv_amount = ls_sflight-price * lv_factor.
+" C = Business, F = First, Y = Economy
+CASE p_class.
+  WHEN 'C'.
+    lv_factor = 2.
+  WHEN 'F'.
+    lv_factor = 3.
+  WHEN OTHERS. "Y
+    lv_factor = 1.
+ENDCASE.
 
-*---------------------------------------------------------------------*
-* 4. Get next BOOKID
-*---------------------------------------------------------------------*
-  SELECT MAX( bookid )
-    INTO lv_bookid
-    FROM sbook
-    WHERE carrid = p_carrid
-      AND connid = p_connid
-      AND fldate = p_fldate.
+lv_amount = ls_sflight-price * lv_factor.
 
-  IF lv_bookid IS INITIAL.
-    lv_bookid = 1.
-  ELSE.
-    lv_bookid = lv_bookid + 1.
-  ENDIF.
 
-*---------------------------------------------------------------------*
-* 5. Insert SBOOK
-*---------------------------------------------------------------------*
-  CLEAR ls_sbook.
+" Get next BOOKID
+SELECT MAX( bookid )
+  INTO lv_bookid
+  FROM sbook
+  WHERE carrid = p_carrid
+    AND connid = p_connid
+    AND fldate = p_fldate.
 
-  ls_sbook-carrid     = p_carrid.
-  ls_sbook-connid     = p_connid.
-  ls_sbook-fldate     = p_fldate.
-  ls_sbook-bookid     = lv_bookid.
-  ls_sbook-customid   = p_cstmid.
-  ls_sbook-class      = p_class.
-  ls_sbook-smoker     = p_smoker.
-  ls_sbook-luggweight = p_lugwht.
-  ls_sbook-wunit      = 'KG'.
+IF lv_bookid IS INITIAL.
+  lv_bookid = 1.
+ELSE.
+  lv_bookid = lv_bookid + 1.
+ENDIF.
 
-  ls_sbook-forcuram   = lv_amount.
-  ls_sbook-forcurkey  = 'EUR'.
-  ls_sbook-loccurkey  = 'EUR'.
+CLEAR ls_sbook.
+ls_sbook-carrid     = p_carrid.
+ls_sbook-connid     = p_connid.
+ls_sbook-fldate     = p_fldate.
+ls_sbook-bookid     = lv_bookid.
+ls_sbook-customid   = p_cstmid.
+ls_sbook-class      = p_class.
+ls_sbook-smoker     = p_smoker.
+ls_sbook-luggweight = p_lugwht.
+ls_sbook-wunit      = c_wunit.
 
-  ls_sbook-invoice    = abap_true.
-  ls_sbook-agencynum  = '00000009'.
-  ls_sbook-counter    = '00000001'.
-  ls_sbook-order_date = sy-datum.
-  ls_sbook-cancelled  = space.
+ls_sbook-forcuram   = lv_amount.
+ls_sbook-forcurkey  = c_currency.
+ls_sbook-loccurkey  = c_currency.
 
-  INSERT sbook FROM ls_sbook.
+ls_sbook-invoice    = c_invoice.
+ls_sbook-agencynum  = c_agencynum.
+ls_sbook-counter    = c_counter.
+ls_sbook-order_date = sy-datum.
+ls_sbook-cancelled  = space.
 
-  IF sy-subrc <> 0.
-    ROLLBACK WORK.
-    WRITE: / 'Error: Booking could not be created.'.
-    EXIT.
-  ENDIF.
+INSERT sbook FROM ls_sbook.
+
+IF sy-subrc <> 0.
+  MESSAGE e005.
+  EXIT.
+ENDIF.
 
 " Updating
 
-  CASE p_class.
-    WHEN 'F'.
-      ls_sflight-seatsocc_f = ls_sflight-seatsocc_f + 1.
-    WHEN 'C'.
-      ls_sflight-seatsocc_b = ls_sflight-seatsocc_b + 1.
-    WHEN OTHERS.
-      ls_sflight-seatsocc   = ls_sflight-seatsocc   + 1.
-  ENDCASE.
+CASE p_class.
+  WHEN 'F'.
+    ls_sflight-seatsocc_f = ls_sflight-seatsocc_f + 1.
+  WHEN 'C'.
+    ls_sflight-seatsocc_b = ls_sflight-seatsocc_b + 1.
+  WHEN OTHERS.
+    ls_sflight-seatsocc   = ls_sflight-seatsocc   + 1.
+ENDCASE.
 
-  UPDATE sflight FROM ls_sflight.
+UPDATE sflight FROM ls_sflight.
 
-  IF sy-subrc <> 0.
-    ROLLBACK WORK.
-    WRITE: / 'Error: Flight update failed.'.
-    EXIT.
-  ENDIF.
+IF sy-subrc <> 0.
+  MESSAGE i004.
+  EXIT.
+ENDIF.
 
-  COMMIT WORK.
+COMMIT WORK.
 
-  WRITE:
-    / 'Booking successfully created!',
-    / 'Carrier      :', p_carrid,
-    / 'Connection   :', p_connid,
-    / 'Flight date  :', p_fldate,
-    / 'Booking ID   :', lv_bookid,
-    / 'Customer ID  :', p_cstmid,
-    / 'Class        :', p_class,
-    / 'Amount (EUR) :', lv_amount.
+WRITE:
+  / 'Booking successfully created!',
+  / 'Carrier      :', p_carrid,
+  / 'Connection   :', p_connid,
+  / 'Flight date  :', p_fldate,
+  / 'Booking ID   :', lv_bookid,
+  / 'Customer ID  :', p_cstmid,
+  / 'Class        :', p_class,
+  / 'Amount (EUR) :', lv_amount.
