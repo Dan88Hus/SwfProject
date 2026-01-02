@@ -1,0 +1,64 @@
+*&---------------------------------------------------------------------*
+*& Report ztgm2531_cancel
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ztgm2531_cancel MESSAGE-ID ztgm2531_messageclas.
+
+* Todo:
+* Read SBOOK - Mark Booking as called - UPDATE SLIGHT ( reduce seat occupation )
+* Commit work - Output MESSAGE.
+
+PARAMETERS:
+  p_carrid TYPE sbook-carrid OBLIGATORY,
+  p_connid TYPE sbook-connid OBLIGATORY,
+  p_fldate TYPE sbook-fldate OBLIGATORY,
+  p_bookid TYPE sbook-bookid OBLIGATORY.
+
+DATA:
+  ls_book    TYPE sbook,
+  ls_sflight TYPE sflight.
+
+SELECT SINGLE * FROM sbook INTO @ls_book WHERE
+                        carrid = @p_carrid AND
+                        connid = @p_connid AND
+                        fldate = @p_fldate AND
+                        bookid = @p_bookid.
+
+IF sy-subrc <> 0.
+  MESSAGE e006.
+  EXIT.
+ENDIF.
+
+
+IF ls_book-cancelled = abap_true.
+  MESSAGE i007.
+  EXIT.
+ELSE.
+  ls_book-cancelled = abap_true.
+ENDIF.
+
+UPDATE sbook FROM ls_book.
+
+IF sy-subrc <> 0.
+  MESSAGE i008.
+  EXIT.
+ENDIF.
+
+CASE ls_book-class.
+  WHEN 'F'.
+    ls_sflight-seatsocc_f = ls_sflight-seatsocc_f - 1.
+  WHEN 'C'.
+    ls_sflight-seatsocc_b = ls_sflight-seatsocc_b + 1.
+  WHEN 'Y'.
+    ls_sflight-seatsocc = ls_sflight-seatsocc + 1.
+ENDCASE.
+
+UPDATE sflight FROM ls_sflight.
+
+IF sy-subrc <> 0.
+  MESSAGE e009.
+  EXIT.
+ENDIF.
+
+MESSAGE S010.
