@@ -133,12 +133,4 @@ ENDIF.
 
 COMMIT WORK.
 
-WRITE:
-  / 'Booking successfully created!',
-  / 'Carrier      :', p_carrid,
-  / 'Connection   :', p_connid,
-  / 'Flight date  :', p_fldate,
-  / 'Booking ID   :', lv_bookid,
-  / 'Customer ID  :', p_cstmid,
-  / 'Class        :', p_class,
-  / 'Amount (EUR) :', lv_amount.
+MESSAGE S011 WITH lv_amount.
