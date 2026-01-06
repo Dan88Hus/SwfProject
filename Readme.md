@@ -4,45 +4,23 @@ velop ABAP programs. Please help her.
 - Program 2: Book a specific flight
 - Program 3: Cancel a booking
 
-<h6>Remarks:</h6>
-- All repository objects come in one package (Name for package ZTG_## e.g.Use-
-name DEVM2599 => ZTGM2599)
-- Every repository object starts with ZTG_## (e.g. Username DEVM2599 =>
-ZTGM2599_DATAELEMENT)
-- Develops useful function modules
-- Use meaningful messages (success/error)
-- Use global data elements
+ SFLIGHT – flight instances (date, seats, price)
+*& SPFLI – flight routes (from/to cities & airports)
+*& SAPLANE – aircraft master data
+*& SBOOK – bookings (for luggage weight)
 
-<h4> Program 1: Display flights to a specific location and time</h4>
-Name: ZTGM####_FLIGHTS e.g. DEVM2599 ZTGM2599_FLIGHTS
+SPFLI contains flight connections</br> <img width="669" height="452" alt="image" src="https://github.com/user-attachments/assets/e75bd05d-b184-4660-9e7e-527f5891d905" />
 
-Input
+individual flights of a connection are stored in the table SFLIGHT </br> <img width="659" height="323" alt="image" src="https://github.com/user-attachments/assets/79e30b4c-c4b4-43a7-b99f-c7fd25e8cbd8" />
 
- Parameters:
-- SPFLI-CITYTO
-- SFLIGHT-FLDATE </br>
+ SBOOK table, bookings are stored </br> <img width="663" height="514" alt="image" src="https://github.com/user-attachments/assets/aa97fd59-62a2-4c79-82b3-3e7132067beb" />
 
-Logic:
-Show all bookable flights that match the destination and date
+ Technical data of the airplanes is listed in the table SAPLANE. </br> <img width="454" height="368" alt="image" src="https://github.com/user-attachments/assets/a569850a-85cd-4328-a934-5ac7a4ae2eac" />
 
-Output
-- Display as an ALV grid!
-- Fields
-- SFLIGHT-CARRID
-- SFLIGHT-CONNID
-- SFLIGHT-FLDATE
-- SFLIGHT-PRICE
-- SPFLI-COUNTRYFR
-- SPFLI-CITYFROM
-- SPFLI-AIRPFROM
-- SPFLI-COUNTRYTO
-- SPFLI -CITYTO
-- SPFLI-AIRPTO
-- Free seats Business Class (own Dataelement with Label "Free Class B“
-and calculate SFLIGH-SEATSMAX_B and SFLIGHT-SEATSOCC_B)
-- Free seats first class (own Dataelement with Label "Free Class F“ and cal-
-culate SFLIGH-SEATSMAX_F and SFLIGHT-SEATSOCC_F)
-- Free seats economy (own Dataelement with Label "Free Class E“ and cal-
-culate SFLIGH-SEATSMAX and SFLIGHT-SEATSOCC)
-- Free weight (own Dataelement with Label "Free weight" and calculate
-SAPLANE-WEIGHT and SBOOK-LUGGWEIGHT
+ ----------------------------------------------------------------
+
+company’s customers can be found in the SCUSTOM table</br> <img width="607" height="348" alt="image" src="https://github.com/user-attachments/assets/2715a7ba-2fc6-4254-96d7-3194dd83336b" />
+
+-------------------------------------------------------------------
+
+
