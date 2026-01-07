@@ -8,7 +8,7 @@
 * SBOOK = Flight Informations like passport number, reserved, cancelled, invoice.
 * CARRID: UA
 * CONNID: 3516
-* FLDATE: 05.07.2022
+* FLDATE: 05.07.2022 
 * Costomer No: 4606
 * WHERE  carrid = 'UA' AND customid = '00004606'
 * Inserting new record to SBOOK.
@@ -139,3 +139,4 @@ COMMIT WORK.
 
 
 MESSAGE S011 WITH lv_amount.
+
